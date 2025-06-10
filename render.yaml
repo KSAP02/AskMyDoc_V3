@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: AskMyDoc
+    env: docker
+    plan: free
+    dockerfilePath: ./frontend/Dockerfile_frontend
+    autoDeploy: true
+    # envVars:
+    #   - key: BACKEND_URL
+    #     value: https://backend-gd2l.onrender.com
+    #   - fromGroup: SmartIntern_env_var  # ✅ Reference your environment group
+
+  - type: web
+    name: askmydoc_backend
+    env: docker
+    plan: free
+    dockerfilePath: ./backend/Dockerfile_backend
+    autoDeploy: true
+    envVars:
+      - fromGroup: AskMyDoc_env_var  # ✅ Reference your environment group
