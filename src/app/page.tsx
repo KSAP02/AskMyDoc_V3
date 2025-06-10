@@ -5,7 +5,7 @@ import type React from "react";
 import { useCallback, useState } from "react";
 import { Input } from "@/components/Input";
 import PDFViewer from "@/components/PDFViwer";
-//import ChatInterface from "@/components/ChatInterface";
+import ChatInterface from "@/components/ChatInterface";
 
 interface ChatMessage {
 	id: string;
@@ -20,7 +20,7 @@ export default function Home() {
 	const [currentPage, setCurrentPage] = useState<number>(1);
 	const [totalPages, setTotalPages] = useState<number>(0);
 	const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
-	//	const [isLoading, setIsLoading] = useState<boolean>(0);
+	const [isLoading, setIsLoading] = useState<boolean>(0);
 
 	const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
 		const file = event.target.files?.[0];
@@ -55,6 +55,34 @@ export default function Home() {
 	const handleTotalPagesChange = useCallback((total: number) => {
 		setTotalPages(total);
 	}, []);
+
+	const handleSendMessage = (message: string) => {
+		setIsLoading(true);
+
+		// Add user's message
+		const userMessage = {
+			id: crypto.randomUUID(),
+			content: message,
+			pageNumber: currentPage,
+			isUser: true,
+		};
+
+		// Simulate a response message
+		const botMessage = {
+			id: crypto.randomUUID(),
+			content: `You said: "${message}"`, 
+			pageNumber: currentPage,
+			isUser: false,
+		};
+
+		// Add both to messages with a slight delay to mimic response
+		setChatMessages((prev) => [...prev, userMessage]);
+
+		setTimeout(() => {
+			setChatMessages((prev) => [...prev, botMessage]);
+			setIsLoading(false); // ✅ turn off loading
+		}, 1000); // 1s delay for realism
+	};
 
 	if (!pdfFile || !pdfUrl) {
 		return (
@@ -94,7 +122,6 @@ export default function Home() {
 					</button>
 				</div>
 
-
 				<div className="flex gap-4 h-[calc(100vh-140px)]">
 					{/* PDF Viewer - 70% width */}
 					<div className="w-[70%]">
@@ -106,7 +133,16 @@ export default function Home() {
 					</div>
 
 					{/* Chat Section - 30% width */}
-					<div className="w-[30%]"></div>
+					<div className="w-[30%]">
+						<ChatInterface
+							messages={chatMessages}
+							currentPage={currentPage}
+							totalPages={totalPages}
+							isLoading={isLoading}
+							onSendMessage={handleSendMessage}
+							pdfFileName={pdfFile.name}
+						/>
+					</div>
 				</div>
 			</div>
 		</div>
