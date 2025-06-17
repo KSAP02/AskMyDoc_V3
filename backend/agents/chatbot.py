@@ -18,7 +18,7 @@ client = AzureOpenAI(
 
 AZURE_DEPLOYMENT_NAME = "gpt-4o-mini"
 
-def get_llm_response(user_query: str, context: str, chat_history: list[dict]) -> str:
+def get_llm_response(user_query: str, context: dict, chat_history: list[dict]) -> str:
     try:
         formatted_history = "\n".join(
             [f"{msg['role'].capitalize()}: {msg['content']}" for msg in chat_history]
