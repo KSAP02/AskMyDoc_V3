@@ -142,7 +142,7 @@ export default function Home() {
 		try {
 			const requestBody = {
 				query: message,
-				page_num: currentPage - 1, // Convert to 0-based indexing for backend
+				page_num: currentPage,
 				chat_history: formatChatHistoryForBackend([...chatMessages, userMessage])
 			};
 
