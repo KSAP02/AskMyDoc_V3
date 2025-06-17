@@ -4,7 +4,7 @@ import uvicorn
 import fitz  # PyMuPdf
 from dotenv import load_dotenv
 import os
-from .agents.embed import embed_documents, embed_query, embedding_model
+from .agents.embed import get_embeddings, embedding_model
 from .agents.chunking import chunk_text_semantically
 from .agents.chatbot import get_llm_response
 import faiss
@@ -45,7 +45,7 @@ class VectorDatabase:
         
         # print(f"Inside create_vector_store: {len(chunks)} chunks", flush=True)
         # print(chunks)
-        embeddings = embed_documents(chunks)
+        embeddings = get_embeddings(chunks)
         dimension = len(embeddings[0])
         
         # print(len(embeddings), flush=True)
@@ -154,41 +154,43 @@ def build_page_vector_stores(page_chunks: list[list[str]]) -> list[VectorDatabas
 
 
 # Retrieves the context for a given query from the vector database.
+
 def get_context(query: str, page_number: int, top_k: int) -> str:
     """Retrieve top-k relevant chunks from previous, current, and next page vector DBs."""
-    # Collect relevant page indices
-    page_indices = [page_number - 1, page_number, page_number + 1]
-    # print(page_indices, len(page_vector_dbs))
-    # Boundary check to avoid index errors
+    # convert 1-based to 0 based index
+    current_idx = page_number - 1
+    page_indices = [current_idx - 1, current_idx, current_idx + 1]
     page_indices = [i for i in page_indices if 0 <= i < len(page_vector_dbs)]
-    # print(page_indices)
-    query_embedding = embed_query(query)
+    
+    print(f"\n=== DEBUG: Searching pages {page_indices} for query: '{query}' ===")
+    
+    query_embedding = get_embeddings([query])[0]
     context_chunks = []
-
-    # Testing print statements
-    # print("====== Page-wise Chunks (Preview) ======\n")
-    # for i, chunks in enumerate(page_chunks[:2]):
-    #     print(f"Page {i + 1}:")
-    #     for j, chunk in enumerate(chunks):
-    #         print(f"  Chunk {j + 1}: {(chunk)}...\n")
-    #     # print("-" * 50)
 
     for idx in page_indices:
         vector_db = page_vector_dbs[idx]
         chunks = page_chunks[idx]
+        
+        print(f"\nPage {idx} has {len(chunks)} chunks:")
+        for i, chunk in enumerate(chunks[:2]):  # Print first 2 chunks of each page
+            print(f"  Chunk {i}: {chunk[:100]}...")
 
         if vector_db.vector_store is None:
-            continue  # Skip if vector store not initialized
+            continue
 
         distances, indices = vector_db.vector_store.index.search(
             np.array([query_embedding], dtype=np.float32), k=top_k
         )
+        
+        print(f"  Best matching indices for page {idx}: {indices[0]}")
+        print(f"  Distances: {distances[0]}")
 
         retrieved = [chunks[i] for i in indices[0] if i < len(chunks)]
+        print(f"  Retrieved {len(retrieved)} chunks from page {idx}")
+        
         context_chunks.extend(retrieved)
 
     return "\n\n".join(context_chunks)
-
 
 # ------------------------------- DATA MODELS FOR ENDPOINTS-----------
 class pdfParserRequest(BaseModel):
