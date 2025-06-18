@@ -36,15 +36,13 @@ export async function POST(request: NextRequest) {
       console.error('Backend error:', errorText);
       return NextResponse.json(
         { error: 'Failed to parse PDF' },
-        { status: backendResponse.status }
       );
     }
 
     const result = await backendResponse.json();
     
     return NextResponse.json({
-      message: result.message || result,
-      timestamp: new Date().toISOString(),
+      message: result,
     });
 
   } catch (error) {
