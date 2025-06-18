@@ -14,19 +14,15 @@ interface PDFViewerProps {
 	onPageChange?: (pageNumber: number) => void;
 }
 
-const PDFViewer: React.FC<PDFViewerProps> = ({
-	fileUrl,
-	onPageChange,
-}) => {
+const PDFViewer: React.FC<PDFViewerProps> = ({ fileUrl, onPageChange }) => {
 	const pageNavigationPluginInstance = pageNavigationPlugin();
 
 	// Create new plugin instance
 	const defaultLayoutPluginInstance = defaultLayoutPlugin();
 
-
-	const handlePageChange = (e: any) => {
+	const handlePageChange = (e: { currentPage: number }) => {
 		const pageNumber = e.currentPage + 1;
-		onPageChange(pageNumber);
+		onPageChange?.(pageNumber);
 	};
 
 	return (

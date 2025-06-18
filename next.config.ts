@@ -3,6 +3,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   webpack: (config, { isServer }) => {
     if (!isServer) {
+      // Prevent server‑only modules (like fs) from being bundled into client code
       config.resolve.fallback = {
         ...config.resolve.fallback,
         fs: false,
@@ -10,10 +11,11 @@ const nextConfig: NextConfig = {
     }
     return config;
   },
-  // Enable API routes
-  experimental: {
-    serverComponentsExternalPackages: [],
-  },
+
+  // Replace the old experimental key with the new one:
+  serverExternalPackages: [
+  ],
 };
 
-module.exports = nextConfig;
+export default nextConfig;
+
