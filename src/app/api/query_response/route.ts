@@ -3,7 +3,6 @@ import { NextRequest, NextResponse } from 'next/server';
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8000';
 
 interface QueryRequest {
-  document_id?: string;
   query: string;
   page_num: number;
   chat_history: Array<{
@@ -57,8 +56,6 @@ export async function POST(request: NextRequest) {
     
     return NextResponse.json({
       response: result,
-      page_num: body.page_num,
-      timestamp: new Date().toISOString(),
     });
 
   } catch (error) {

@@ -12,27 +12,17 @@ import { pageNavigationPlugin } from "@react-pdf-viewer/page-navigation";
 interface PDFViewerProps {
 	fileUrl: string;
 	onPageChange?: (pageNumber: number) => void;
-	onTotalPagesChange?: (totalPages: number) => void;
 }
 
-const PDFViewer: React.FC<PDFViewerProps> = ({
-	fileUrl,
-	onPageChange,
-	onTotalPagesChange,
-}) => {
+const PDFViewer: React.FC<PDFViewerProps> = ({ fileUrl, onPageChange }) => {
 	const pageNavigationPluginInstance = pageNavigationPlugin();
-	const { jumpToPage } = pageNavigationPluginInstance;
 
 	// Create new plugin instance
 	const defaultLayoutPluginInstance = defaultLayoutPlugin();
 
-	const handleDocumentLoad = (e: any) => {
-		onTotalPagesChange(e.doc.numPages);
-	};
-
-	const handlePageChange = (e: any) => {
+	const handlePageChange = (e: { currentPage: number }) => {
 		const pageNumber = e.currentPage + 1;
-		onPageChange(pageNumber);
+		onPageChange?.(pageNumber);
 	};
 
 	return (
@@ -45,7 +35,6 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
 							defaultLayoutPluginInstance,
 							pageNavigationPluginInstance,
 						]}
-						onDocumentLoad={handleDocumentLoad}
 						onPageChange={handlePageChange}
 					/>
 				</div>
