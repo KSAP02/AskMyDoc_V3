@@ -5,9 +5,6 @@ import os
 # Load environment variables
 load_dotenv()
 
-print(f"AZURE_OPENAI_ENDPOINT: {os.getenv('AZURE_OPENAI_ENDPOINT')}")
-print(f"AZURE_DEPLOYMENT_NAME: {os.getenv('AZURE_DEPLOYMENT_NAME')}")
-print(f"API_KEY exists: {bool(os.getenv('AZURE_OPENAI_API_KEY'))}")
 
 client = AzureOpenAI(
     api_key=os.getenv("AZURE_OPENAI_API_KEY"),
@@ -56,7 +53,7 @@ def get_llm_response(user_query: str, context: dict, chat_history: list[dict]) -
         response = client.chat.completions.create(
             model=AZURE_DEPLOYMENT_NAME,
             messages=[
-                {"role": "system", "content": system_prompt.strip()},
+                {"role": "assistant", "content": system_prompt.strip()},
                 {"role": "user", "content": user_prompt.strip()}
             ],
             temperature=0.4

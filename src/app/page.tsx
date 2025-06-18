@@ -20,7 +20,6 @@ interface ChatMessage {
 	id: string;
 	content: string;
 	pageNumber: number;
-	isUser: boolean;
 	role: "user" | "assistant";
 }
 
@@ -33,11 +32,9 @@ export default function Home() {
 	const [pdfFile, setPdfFile] = useState<File | null>(null);
 	const [pdfUrl, setPdfUrl] = useState<string | null>(null);
 	const [currentPage, setCurrentPage] = useState<number>(1);
-	const [totalPages, setTotalPages] = useState<number>(0);
 	const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
 	const [isLoading, setIsLoading] = useState<boolean>(false);
 	const [isPdfParsing, setIsPdfParsing] = useState<boolean>(false);
-	const [documentId, setDocumentId] = useState<string | null>(null); // Store document ID from parsing
 	const [sidebarWidth, setSidebarWidth] = useState(30); // Percentage
 	const [isCollapsed, setIsCollapsed] = useState(false);
 	  const fileInputRef = useRef<HTMLInputElement>(null)
@@ -58,9 +55,7 @@ export default function Home() {
 
 		// Reset state when new file is uploaded
 		setCurrentPage(1);
-		setTotalPages(0);
 		setChatMessages([]);
-		setDocumentId(null);
 
 		// Parse PDF immediately after upload
 		await parsePDF(file);
@@ -84,17 +79,8 @@ export default function Home() {
 
 			const parseData = await parseResponse.json();
 
-			// Store the document ID for future queries
-			if (parseData.document_id) {
-				setDocumentId(parseData.document_id);
-			}
-
 			console.log("PDF parsed successfully:", parseData);
 
-			// You can also set total pages here if returned from backend
-			if (parseData.total_pages) {
-				setTotalPages(parseData.total_pages);
-			}
 		} catch (error) {
 			console.error("Error parsing PDF:", error);
 			// Handle error - maybe show a toast notification
@@ -118,18 +104,13 @@ export default function Home() {
 		setPdfFile(null);
 		setPdfUrl(null);
 		setCurrentPage(1);
-		setTotalPages(0);
 		setChatMessages([]);
-		setDocumentId(null);
 	};
 
 	const handlePageChange = useCallback((pageNumber: number) => {
 		setCurrentPage(pageNumber);
 	}, []);
 
-	const handleTotalPagesChange = useCallback((total: number) => {
-		setTotalPages(total);
-	}, []);
 
 	const handleDrag = (newWidth: number) => {
 		setSidebarWidth(Math.max(20, Math.min(80, newWidth)));
@@ -164,16 +145,11 @@ export default function Home() {
 			return;
 		}
 		
-		if (!documentId) {
-			console.error("Document ID not available");
-			return;
-		}
 
 		const userMessage: ChatMessage = {
 			id: `user-${Date.now()}`,
 			content: message,
 			pageNumber: currentPage,
-			isUser: true,
 			role: "user",
 		};
 
@@ -212,7 +188,6 @@ export default function Home() {
 				id: `bot-${Date.now()}`,
 				content: JSON.parse(data.response) || "No response received",
 				pageNumber: currentPage,
-				isUser: false,
 				role: "assistant",
 			};
 
@@ -225,7 +200,6 @@ export default function Home() {
 				id: `error-${Date.now()}`,
 				content: "Sorry, something went wrong. Please try again.",
 				pageNumber: currentPage,
-				isUser: false,
 				role: "assistant",
 			};
 			setChatMessages((prev) => [...prev, errorMessage]);
@@ -369,25 +343,7 @@ export default function Home() {
     );
   }
 
-	  // Don't render the main interface until document is parsed
 
-  	if (!documentId) {
-		return (
-			<div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-sky-50 via-white to-cyan-50">
-				<Card className="w-96" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 8px 32px rgba(0,0,0,0.1)" }}>
-					<CardContent className="flex flex-col items-center p-8">
-						<div className="animate-spin rounded-full h-12 w-12 border-2 border-[#4A7C2A] border-t-transparent mb-4"></div>
-						<h2 className="text-xl font-semibold mb-2 font-ui" style={{ color: "#2F2F2F" }}>
-							Preparing Document...
-						</h2>
-						<p className="text-center font-body" style={{ color: "#2F2F2F" }}>
-							Setting up your PDF for interaction
-						</p>
-					</CardContent>
-				</Card>
-			</div>
-		)
-	}
 
   const pdfWidth = isCollapsed ? 100 : 100 - sidebarWidth
   const chatWidth = isCollapsed ? 0 : sidebarWidth
@@ -441,13 +397,12 @@ export default function Home() {
           className="transition-all duration-200 ease-in-out"
           style={{
             width: `${pdfWidth}%`,
-            paddingRight: isCollapsed ? "0" : "12px",
+            paddingRight: isCollapsed ? "0" : "10px",
           }}
         >
 						<PDFViewer
 							fileUrl={pdfUrl}
 							onPageChange={handlePageChange}
-							onTotalPagesChange={handleTotalPagesChange}
 						/>
         </div>
 
@@ -468,7 +423,6 @@ export default function Home() {
 						<ChatInterface
 							messages={chatMessages}
 							currentPage={currentPage}
-							totalPages={totalPages}
 							isLoading={isLoading}
 							onSendMessage={handleSendMessage}
 							pdfFileName={pdfFile.name}

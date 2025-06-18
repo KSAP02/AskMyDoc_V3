@@ -8,13 +8,12 @@ interface ChatMessage {
 	id: string;
 	content: string;
 	pageNumber: number;
-	isUser: boolean;
+	role: string;
 }
 
 interface ChatInterfaceProps {
 	messages: ChatMessage[];
 	currentPage: number;
-	totalPages: number;
 	isLoading: boolean;
 	onSendMessage: (message: string) => void;
 	pdfFileName: string;
@@ -25,7 +24,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 	currentPage,
 	isLoading,
 	onSendMessage,
-	pdfFileName,
 }) => {
 	const [inputMessage, setInputMessage] = useState<string>("");
 	const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -61,11 +59,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 					messages.map((message) => (
 						<div
 							key={message.id}
-							className={`flex ${message.isUser ? "justify-end" : "justify-start"}`}
+							className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
 						>
 							<div
 								className={`max-w-[80%] p-3 rounded-2xl shadow-md backdrop-blur-sm border border-white/40 text-gray-900 ${
-									message.isUser
+									message.role === "user"
 										? "bg-gradient-to-br from-blue-100/60 via-white/60 to-purple-100/60"
 										: "bg-gradient-to-br from-cyan-50/80 via-white/80 to-indigo-50/80"
 								}`}

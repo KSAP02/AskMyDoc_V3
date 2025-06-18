@@ -43,9 +43,7 @@ export async function POST(request: NextRequest) {
     const result = await backendResponse.json();
     
     return NextResponse.json({
-      document_id: result.document_id || 'success',
       message: result.message || result,
-      total_pages: result.total_pages || 0,
       timestamp: new Date().toISOString(),
     });
 
