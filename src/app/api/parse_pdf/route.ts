@@ -38,13 +38,9 @@ export async function POST(request: NextRequest) {
 		}
 
 		const result = await backendResponse.json();
-
-		return NextResponse.json(
-			{
-				message: result,
-			},
-			{ status: 200 }
-		);
+		return NextResponse.json(result, {
+			status: backendResponse.status,
+		});
 	} catch (error) {
 		console.error("Error in parse_pdf route:", error);
 		return NextResponse.json(

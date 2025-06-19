@@ -36,6 +36,7 @@ export default function Home() {
 	const [isLoading, setIsLoading] = useState<boolean>(false);
 	const [isPdfParsing, setIsPdfParsing] = useState<boolean>(false);
 	const [sidebarWidth, setSidebarWidth] = useState(30); // Percentage
+	const [totalPages, setTotalPages] = useState(0); // Percentage
 	const [isCollapsed, setIsCollapsed] = useState(false);
 	const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -78,6 +79,10 @@ export default function Home() {
 			}
 
 			const parseData = await parseResponse.json();
+
+			if (parseData.total_pages) {
+				setTotalPages(parseData.total_pages);
+			}
 
 			console.log("PDF parsed successfully:", parseData);
 		} catch (error) {
@@ -416,7 +421,6 @@ export default function Home() {
 				>
 					<PDFViewer
 						fileUrl={pdfUrl}
-						onPageChange={handlePageChange}
 					/>
 				</div>
 
@@ -443,7 +447,8 @@ export default function Home() {
 							currentPage={currentPage}
 							isLoading={isLoading}
 							onSendMessage={handleSendMessage}
-							pdfFileName={pdfFile.name}
+							totalPages={totalPages}
+							onPageChange={handlePageChange}
 						/>
 					)}
 				</div>

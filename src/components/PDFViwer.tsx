@@ -1,46 +1,66 @@
 "use client";
 
-import { Viewer, Worker } from "@react-pdf-viewer/core";
-import { defaultLayoutPlugin } from "@react-pdf-viewer/default-layout";
-
-// Import styles
-import "@react-pdf-viewer/core/lib/styles/index.css";
-import "@react-pdf-viewer/default-layout/lib/styles/index.css";
-import "@react-pdf-viewer/page-navigation/lib/styles/index.css";
-import { pageNavigationPlugin } from "@react-pdf-viewer/page-navigation";
+import React, { useEffect, useState } from "react";
 
 interface PDFViewerProps {
-	fileUrl: string;
-	onPageChange?: (pageNumber: number) => void;
+  fileUrl: string;
 }
 
-const PDFViewer: React.FC<PDFViewerProps> = ({ fileUrl, onPageChange }) => {
-	const pageNavigationPluginInstance = pageNavigationPlugin();
+const PDFViewer: React.FC<PDFViewerProps> = ({ fileUrl }) => {
+  const [resolvedUrl, setResolvedUrl] = useState<string>("");
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // Convert blob URL to data URL if needed
+  useEffect(() => {
+    const handleBlobUrl = async () => {
+      setIsLoading(true);
+      
+      if (fileUrl.startsWith('blob:')) {
+        try {
+          // Fetch the blob
+          const response = await fetch(fileUrl);
+          const blob = await response.blob();
+          
+          // Convert to data URL
+          const reader = new FileReader();
+          reader.onload = () => {
+            setResolvedUrl(reader.result as string);
+            setIsLoading(false);
+          };
+          reader.onerror = () => {
+            console.error("Error reading blob:", reader.error);
+            setIsLoading(false);
+          };
+          reader.readAsDataURL(blob);
+        } catch (error) {
+          console.error("Error fetching blob:", error);
+          setIsLoading(false);
+        }
+      } else {
+        // Not a blob URL, use as is
+        setResolvedUrl(fileUrl);
+        setIsLoading(false);
+      }
+    };
+    
+    handleBlobUrl();
+  }, [fileUrl]);
 
-	// Create new plugin instance
-	const defaultLayoutPluginInstance = defaultLayoutPlugin();
-
-	const handlePageChange = (e: { currentPage: number }) => {
-		const pageNumber = e.currentPage + 1;
-		onPageChange?.(pageNumber);
-	};
-
-	return (
-		<div className="h-full bg-white rounded-lg shadow-lg overflow-hidden">
-			<Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
-				<div className="h-[calc(100%-40px)]">
-					<Viewer
-						fileUrl={fileUrl}
-						plugins={[
-							defaultLayoutPluginInstance,
-							pageNavigationPluginInstance,
-						]}
-						onPageChange={handlePageChange}
-					/>
-				</div>
-			</Worker>
-		</div>
-	);
+  return (
+    <div className="h-full bg-white rounded-lg shadow-lg overflow-hidden">
+      {isLoading ? (
+        <div className="flex items-center justify-center h-full">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+        </div>
+      ) : (
+        <iframe
+          src={resolvedUrl}
+          className="w-full h-full"
+          title="PDF Viewer"
+        />
+      )}
+    </div>
+  );
 };
 
 export default PDFViewer;
