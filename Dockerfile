@@ -1,0 +1,24 @@
+FROM node:20-bullseye-slim AS builder
+
+RUN apt-get update \
+ && apt-get install 
+
+WORKDIR /app
+COPY package*.json ./
+
+RUN npm install -g npm@11.4.2
+RUN npm install
+
+# 5) Copy source and build
+COPY . .
+RUN npm run build
+
+# ---- Runner stage ----
+FROM node:20-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+EXPOSE 3000
+CMD ["node", "server.js"]

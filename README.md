@@ -22,12 +22,12 @@ YouTube Demo Link- https://youtu.be/g4oQRwsJ5L4
 | Layer           | Tools/Tech Used                                    |
 |----------------|-----------------------------------------------------|
 | Backend         | Python, FastAPI, LangChain |
-| Frontend        | Streamlit                                          |
+| Frontend        | React using Next.js                                          |
 | Vector Search | FAISS                             |
 | LLM & NLP       | OpenAI LLMs |
 | PDF Parsing   | PyMuPDF (fitz)                    |
 | Agents          | ReAct, RAG, Chatbot, Embeddings|
-| Agent Logic   | OpenAI GPT-3.5 Turbo              |
+| Agent Logic   | OpenAI GPT-4.0 mini|
 | Storage       | In-memory (for now)               |
 | Embeddings      | OpenAI (`text-embedding-3-small`) |
 
@@ -35,12 +35,12 @@ YouTube Demo Link- https://youtu.be/g4oQRwsJ5L4
 
 ## 🔄 Workflow Overview
 
-### 🎛️ Frontend Workflow (Streamlit)
+### 🎛️ Frontend Workflow (React.js)
 
 1. User uploads a PDF file.
 2. PDF is displayed in an embedded viewer.
 3. User selects a page and types a query in the chat window.
-4. Streamlit sends a POST request to the FastAPI backend with:
+4. Next.js sends a POST request to the FastAPI backend with:
 
    * User query
    * Selected page number
@@ -79,7 +79,7 @@ graph TD
   * Injects the user query, relevant context, and conversation history.
 * **Response Generation**:
 
-  * Uses GPT-3.5-Turbo to produce natural, context-aware answers or follow-up questions.
+  * Uses GPT-4.0-mini to produce natural, context-aware answers or follow-up questions.
 
 ---
 
@@ -105,9 +105,8 @@ graph TD
 To run it locally:
 ```bash
 git clone https://github.com/your-repo/askmydoc.git
-cd askmydoc
-pip install -r requirements.txt
-streamlit run app.py
+npm install
+npm run dev
 ```
 In another terminal
 ```bash

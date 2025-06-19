@@ -4,9 +4,9 @@ import uvicorn
 import fitz  # PyMuPdf
 from dotenv import load_dotenv
 import os
-from .agents.embed import get_embeddings, embedding_model
-from .agents.chunking import chunk_text_semantically
-from .agents.chatbot import get_llm_response
+from agents.embed import get_embeddings, embedding_model
+from agents.chunking import chunk_text_semantically
+from agents.chatbot import get_llm_response
 import faiss
 from langchain.schema import Document
 from langchain_community.docstore.in_memory import InMemoryDocstore
@@ -226,7 +226,7 @@ async def parse_pdf(file: UploadFile = File(...)):
     # convert page_chunks to a list of embeddings for each page and store in a vectorDB
     page_vector_dbs = build_page_vector_stores(page_chunks)
     print(f"Vector stores created: {len(page_vector_dbs)}")
-    return "Parsed and chunked successfully."
+    return {"total_pages": len(page_wise_texts)}
 
 
 @app.post("/query_response")
