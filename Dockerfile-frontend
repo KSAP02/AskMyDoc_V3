@@ -1,7 +1,7 @@
 FROM node:20-bullseye-slim AS builder
 
 RUN apt-get update \
- && apt-get install 
+ && apt-get install -y git
 
 WORKDIR /app
 COPY package*.json ./
@@ -9,7 +9,7 @@ COPY package*.json ./
 RUN npm install -g npm@11.4.2
 RUN npm install
 
-# 5) Copy source and build
+# Copy source and build
 COPY . .
 RUN npm run build
 
