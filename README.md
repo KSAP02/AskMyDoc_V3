@@ -1,7 +1,4 @@
 
-https://github.com/user-attachments/assets/315f6243-c4fc-46a7-961e-5fb40fd2579b
----
-
 # 📚 AskMyDoc: Interactive PDF Chat Assistant
 
 AskMyDoc is an AI-powered assistant designed to simplify the way you interact with PDF documents. Instead of manually scanning through pages, you can have natural conversations to quickly extract key insights, clarify concepts, and locate relevant information. Whether you're working with research papers, technical manuals, or business reports, AskMyDoc helps you focus on what matters—saving time and boosting productivity with intelligent, context-aware responses.
