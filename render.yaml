@@ -5,9 +5,9 @@ services:
     plan: free
     dockerfilePath: ./Dockerfile-frontend
     autoDeploy: true
-    # envVars:
-    #   - key: BACKEND_URL
-    #     value: https://backend-gd2l.onrender.com
+    envVars:
+      - key: BACKEND_URL
+        value: https://askmydoc-backend-v3.onrender.com
     #   - fromGroup: SmartIntern_env_var  # ✅ Reference your environment group
 
   - type: web
