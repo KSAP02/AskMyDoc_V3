@@ -17,4 +17,4 @@ services:
     dockerfilePath: ./backend/Dockerfile_backend
     autoDeploy: true
     envVars:
-      - fromGroup: AskMyDoc_v3_env_var  # ✅ Reference your environment group
+      - fromGroup: AskMyDoc_env_var  # ✅ Reference your environment group
