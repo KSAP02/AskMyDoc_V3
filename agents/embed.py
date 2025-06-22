@@ -1,37 +1,28 @@
 from dotenv import load_dotenv
 import os
-from openai import AzureOpenAI
-from langchain_openai import AzureOpenAIEmbeddings
+import openai
+from langchain_openai import OpenAIEmbeddings
 
-# Load environment variables
+LLM_MODEL = "gpt-3.5-turbo" 
+
 load_dotenv()
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
-# Azure OpenAI client setup
-client = AzureOpenAI(
-    api_key=os.getenv("AZURE_OPENAI_EMBEDDING_KEY"),
-    azure_endpoint=os.getenv("AZURE_OPENAI_EMBEDDING_ENDPOINT"),
-    api_version="2023-05-15",  # Fixed the API version format
+embedding_model = OpenAIEmbeddings(
+    model="text-embedding-3-small",
+    openai_api_key=openai.api_key
 )
 
-# Replace this with your actual embedding deployment name in Azure
-EMBEDDING_DEPLOYMENT_NAME = "text-embedding-3-small"
+EMBEDDING_MODEL = "text-embedding-3-small"
 
-# LangChain Azure OpenAI Embeddings model
-embedding_model = AzureOpenAIEmbeddings(
-    azure_deployment=EMBEDDING_DEPLOYMENT_NAME,
-    azure_endpoint=os.getenv("AZURE_OPENAI_EMBEDDING_ENDPOINT"),
-    api_key=os.getenv("AZURE_OPENAI_EMBEDDING_KEY"),
-    api_version="2023-05-15",
-)
-
-def get_embeddings(arr: list[str]) -> list[list[float]]:
-    try:
-        response = client.embeddings.create(
-            input=arr,
-            model=EMBEDDING_DEPLOYMENT_NAME
-        )
-        embeddings = [record.embedding for record in response.data]
-        return embeddings
-    except Exception as e:
-        print(f"[ERROR] Embedding generation failed: {e}")
-        return []
+# Length of each embedding is 1536 for text-embedding-3-small
+def get_embeddings(arr:list) -> list[list[float]]:
+    
+    response = openai.embeddings.create(
+        input=arr,
+        model=EMBEDDING_MODEL    
+    )
+    
+    embeddings = [record.embedding for record in response.data]
+    
+    return embeddings

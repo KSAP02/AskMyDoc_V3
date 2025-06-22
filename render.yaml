@@ -3,7 +3,7 @@ services:
     name: AskMyDoc
     env: docker
     plan: free
-    dockerfilePath: ./frontend/Dockerfile_frontend
+    dockerfilePath: ./Dockerfile-frontend
     autoDeploy: true
     # envVars:
     #   - key: BACKEND_URL

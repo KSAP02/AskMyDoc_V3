@@ -1,26 +1,21 @@
-from openai import AzureOpenAI
+from openai import OpenAI
 from dotenv import load_dotenv
 import os
 
-# Load environment variables
+# Load environment and set up client
 load_dotenv()
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
+LLM_MODEL = "gpt-3.5-turbo"  # or "gpt-4" if you're using GPT-4
 
-client = AzureOpenAI(
-    api_key=os.getenv("AZURE_OPENAI_API_KEY"),
-    api_version="2025-01-01-preview",
-    azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT")
-)
-
-
-AZURE_DEPLOYMENT_NAME = "gpt-4o-mini"
-
-def get_llm_response(user_query: str, context: dict, chat_history: list[dict]) -> str:
+def get_llm_response(user_query: str, context: str, chat_history: list[dict]) -> str:
     try:
+        # Format chat history into readable dialogue
         formatted_history = "\n".join(
             [f"{msg['role'].capitalize()}: {msg['content']}" for msg in chat_history]
         )
 
+        # System prompt focused on ReAct-based analytical behavior
         system_prompt = """
         You are a helpful, knowledgeable, and reflective assistant that responds naturally and conversationally to questions. 
         You must always answer using only the information provided in the context. If the context does not contain the necessary information, 
@@ -36,6 +31,7 @@ def get_llm_response(user_query: str, context: dict, chat_history: list[dict]) -
         Keep the tone intelligent, supportive, and focused on the given context.
         """
 
+        # User prompt containing query and context
         user_prompt = f"""
         Context:
         {context}
@@ -50,18 +46,18 @@ def get_llm_response(user_query: str, context: dict, chat_history: list[dict]) -
         If something is unclear or missing, ask the user a clarifying question instead of making assumptions.
         """
 
+        # Call OpenAI API
         response = client.chat.completions.create(
-            model=AZURE_DEPLOYMENT_NAME,
+            model=LLM_MODEL,
             messages=[
-                {"role": "assistant", "content": system_prompt.strip()},
+                {"role": "system", "content": system_prompt.strip()},
                 {"role": "user", "content": user_prompt.strip()}
             ],
             temperature=0.4
         )
 
-        return response.choices[0].message.content.strip()
+        return response.choices[0].message.content
 
     except Exception as e:
         print(f"[ERROR] get_llm_response: {e}")
         return "There was an error processing your request."
-

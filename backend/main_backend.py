@@ -1,11 +1,12 @@
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI, UploadFile, File, Form
 from pydantic import BaseModel
 import uvicorn
-import fitz  # PyMuPdf
+import fitz # PyMuPdf
 from dotenv import load_dotenv
+import docx2txt
 import os
-from agents.embed import get_embeddings, embedding_model
 from agents.chunking import chunk_text_semantically
+from agents.embed import get_embeddings, embedding_model
 from agents.chatbot import get_llm_response
 import faiss
 from langchain.schema import Document
@@ -13,24 +14,21 @@ from langchain_community.docstore.in_memory import InMemoryDocstore
 from langchain_community.vectorstores import FAISS
 import numpy as np
 from uuid import uuid4
-from datetime import datetime
 from fastapi.middleware.cors import CORSMiddleware
 
-load_dotenv()
 
-app = FastAPI(title="AskMyDoc Backend", version="1.0.0")
+app = FastAPI()
 
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=["http://localhost:3000"], # Local URL
+    # allow_origins=["http://localhost:3000"], # deployment URL
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-
-# ----------------------------------- CLASSES AND GLOBAL VARIABLES---
+# ----------------------------------- CLASSES AND GLOBAL VARIABLES--------------------------------------
 
 # FastAPI does not maintain state between requests, 
 # so you need a global storage mechanism for storing the vector database
@@ -70,7 +68,6 @@ class VectorDatabase:
             embedding_function=self.embeddings,
         )
 
-
 # Global vector database instance
 vector_db = VectorDatabase()
 
@@ -79,13 +76,13 @@ page_vector_dbs: list[VectorDatabase] = []  # This will hold the vector database
 page_chunks: list[list[str]] = []  # This will hold the chunks for each page where chunks is: list[str]
 
 
-# ----------------------------------- CORE FUNCTIONS -----------------
+# ----------------------------------- CORE FUNCTIONS -----------------------------------
 
 # Extract text from PDF and return a list of strings, each representing a page's text.
 def extract_pdf_pages(file_bytes: bytes) -> list[str]:
     """
-    Extracts text from each page of a PDF and returns a list where each
-    index corresponds to a page.
+    Extracts text from each page of a PDF and returns a list where each index corresponds to a page.
+    
     :param file_bytes: The raw bytes of the PDF file
     :return: List of strings, each string is the text from one page
     """
@@ -93,24 +90,20 @@ def extract_pdf_pages(file_bytes: bytes) -> list[str]:
 
     with fitz.open(stream=file_bytes, filetype="pdf") as doc:
          return [page.get_text().strip() for page in doc]
-
-
+     
 # Extracts text from a PDF file and returns the full document text as a single string.
 def parse_file_contents(file_bytes: bytes) -> str:
     """Returns full document text as a single string."""
     with fitz.open(stream=file_bytes, filetype="pdf") as doc:
         return "\n".join([page.get_text() for page in doc])
-
-
+    
 # Chunks the text semantically using the SemanticChunker from LangChain for page wise data.
 def chunk_page_wise_texts(page_texts: list[str]) -> list[list[str]]:
     """
     For each page's text, create semantic chunks.
-    Returns a list where each element is a list of semantic chunks
-    from that page.
+    Returns a list where each element is a list of semantic chunks from that page.
     """
     return [chunk_text_semantically(page_text) for page_text in page_texts]
-
 
 # Chunks the full text of the document semantically and returns a flat list of all chunks.
 def chunk_full_text(full_text: str) -> list[str]:
@@ -120,7 +113,6 @@ def chunk_full_text(full_text: str) -> list[str]:
     """
     return chunk_text_semantically(full_text)
 
-
 # Builds a vector store for each page's chunks and returns a list of vector stores.
 # Assume VectorDatabase and vector_db = VectorDatabase() are already defined elsewhere
 
@@ -128,8 +120,7 @@ def build_page_vector_stores(page_chunks: list[list[str]]) -> list[VectorDatabas
     """
     Creates a list of vector databases, one for each page's chunks.
     Args:
-        page_chunks (List[List[str]]): List of pages, each containing
-        a list of chunked strings.
+        page_chunks (List[List[str]]): List of pages, each containing a list of chunked strings.
     Returns:
         List[VectorDatabase]: List of FAISS vector store objects for each page.
     """
@@ -138,6 +129,7 @@ def build_page_vector_stores(page_chunks: list[list[str]]) -> list[VectorDatabas
     for page_num, chunks in enumerate(page_chunks):
         if not chunks:
             continue  # Skip empty pages
+        
         # Create a new vector database instance for this page
         vector_db = VectorDatabase()
 
@@ -152,62 +144,65 @@ def build_page_vector_stores(page_chunks: list[list[str]]) -> list[VectorDatabas
 
     return page_vector_dbs
 
-
 # Retrieves the context for a given query from the vector database.
-
 def get_context(query: str, page_number: int, top_k: int) -> str:
     """Retrieve top-k relevant chunks from previous, current, and next page vector DBs."""
-    # convert 1-based to 0 based index
-    current_idx = page_number - 1
-    page_indices = [current_idx - 1, current_idx, current_idx + 1]
-    page_indices = [i for i in page_indices if 0 <= i < len(page_vector_dbs)]
+    # Collect relevant page indices
+    page_indices = [page_number - 1, page_number, page_number + 1]
+    # print(page_indices, len(page_vector_dbs))
     
-    print(f"\n=== DEBUG: Searching pages {page_indices} for query: '{query}' ===")
+    # Boundary check to avoid index errors
+    page_indices = [i for i in page_indices if 0 <= i < len(page_vector_dbs)]
+    # print(page_indices)
     
     query_embedding = get_embeddings([query])[0]
     context_chunks = []
+    
+    # Testing print statements
+    # print("====== Page-wise Chunks (Preview) ======\n")
+    # for i, chunks in enumerate(page_chunks[:2]):
+    #     print(f"Page {i + 1}:")
+    #     for j, chunk in enumerate(chunks):
+    #         print(f"  Chunk {j + 1}: {(chunk)}...\n")
+    #     # print("-" * 50)
 
     for idx in page_indices:
         vector_db = page_vector_dbs[idx]
         chunks = page_chunks[idx]
-        
-        print(f"\nPage {idx} has {len(chunks)} chunks:")
-        for i, chunk in enumerate(chunks[:2]):  # Print first 2 chunks of each page
-            print(f"  Chunk {i}: {chunk[:100]}...")
 
         if vector_db.vector_store is None:
-            continue
+            continue  # Skip if vector store not initialized
 
         distances, indices = vector_db.vector_store.index.search(
             np.array([query_embedding], dtype=np.float32), k=top_k
         )
-        
-        print(f"  Best matching indices for page {idx}: {indices[0]}")
-        print(f"  Distances: {distances[0]}")
 
         retrieved = [chunks[i] for i in indices[0] if i < len(chunks)]
-        print(f"  Retrieved {len(retrieved)} chunks from page {idx}")
-        
         context_chunks.extend(retrieved)
 
     return "\n\n".join(context_chunks)
 
-# ------------------------------- DATA MODELS FOR ENDPOINTS-----------
+
+# ------------------------------- DATA MODELS FOR ENDPOINTS-------------------------------
 class pdfParserRequest(BaseModel):
     file: UploadFile = File(...)
-
 
 class QueryResponseRequest(BaseModel):
     query: str
     page_num: int # include a less than operator to avoid out of bounds error
     chat_history: list[dict] # List of dictionaries with 'role' and 'content'
+    
+# ------------------------------- FAST API ENDPOINTS -------------------------------
+@app.get("/")
+def health_check():
+    return {"status": "OK"}
 
-
-# ------------------------------- FAST API ENDPOINTS -----------------
 @app.post("/parse_pdf")
 async def parse_pdf(file: UploadFile = File(...)):
     global page_chunks, page_vector_dbs
+    
     contents = await file.read()
+    
     try:
         page_wise_texts = extract_pdf_pages(contents)
         full_text = parse_file_contents(contents)
@@ -219,22 +214,25 @@ async def parse_pdf(file: UploadFile = File(...)):
 
     except Exception as e:
         return {"error": str(e)}
-
+    
     # Create chunks of page wise text and ful text
     page_chunks = chunk_page_wise_texts(page_wise_texts)  # List[List[str]] its a list of chunks for each page
     full_chunks = chunk_full_text(full_text)              # List[str] its a list of chunks of the entire text
+    
     # convert page_chunks to a list of embeddings for each page and store in a vectorDB
     page_vector_dbs = build_page_vector_stores(page_chunks)
     print(f"Vector stores created: {len(page_vector_dbs)}")
-    return {"total_pages": len(page_wise_texts)}
-
+    
+    return {"total_pages": len(page_vector_dbs)}
 
 @app.post("/query_response")
 async def query_response(request: QueryResponseRequest):
     top_k = 3  # Number of top relevant chunks to retrieve
+    
     # if request.page_num < 1 or request.page_num > len(page_vector_dbs):
     #     return {"error": "Page number out of bounds."}
     print(request.page_num)
+    
     context = get_context(request.query, request.page_num, top_k)
     print(f"Context retrieved for page {request.page_num}: {context[:100]}...")  # Print first 100 chars for brevity
     return get_llm_response(
@@ -242,10 +240,8 @@ async def query_response(request: QueryResponseRequest):
         context=context, 
         chat_history=request.chat_history
     )
-
+    
 # ---------------------------- TESTING ENTRY POINT FOR TERMINAL ----------------------------
-
-
 def preview_chunks(page_chunks: list[list[str]], full_chunks: list[str], page_limit: int = 2, chunk_limit: int = 3):
     print("====== Page-wise Chunks (Preview) ======\n")
     for i, chunks in enumerate(page_chunks[:page_limit]):
@@ -265,6 +261,7 @@ def preview_chunks(page_chunks: list[list[str]], full_chunks: list[str], page_li
 
 # def main():
 #     global page_chunks, page_vector_dbs
+    
 #     # Hide the main tkinter window
 #     root = tk.Tk()
 #     root.withdraw()
@@ -282,6 +279,7 @@ def preview_chunks(page_chunks: list[list[str]], full_chunks: list[str], page_li
 #     file_name = os.path.basename(file_path)
 #     with open(file_path, "rb") as f:
 #         file_bytes = f.read()
+        
 #     page_wise_parsed = extract_pdf_pages(file_bytes)
 #     # for i, page in enumerate(page_wise_parsed):
 #     #     print(f"\n--- Page {i+1} ---\n{page}")
@@ -293,17 +291,23 @@ def preview_chunks(page_chunks: list[list[str]], full_chunks: list[str], page_li
 #         # print("\n--- Extracted Text End ---")
 #     except ValueError as e:
 #         print(f"Error: {e}")
+    
 #     page_chunks = chunk_page_wise_texts(page_wise_parsed)  # List[List[str]] its a list of chunks for each page
 #     full_chunks = chunk_full_text(complete_parsed_text)    # List[str] its a list of chunks of the entire text
+    
 #     # Call this after generating your chunks
 #     # preview_chunks(page_chunks, full_chunks)
+    
 #     # convert page_chunks to a list of embeddings for each page and store in a vectorDB
 #     page_vector_dbs = build_page_vector_stores(page_chunks)
 #     print(f"Vector stores created: {len(page_vector_dbs)}")
+    
 #     for i, db in enumerate(page_vector_dbs):
 #         print(f"DB {i} type: {type(db)}")
+        
 #     context = get_context("Zero-Shot Multi-Task Rearrangement", page_number=4, top_k=2)
 #     print(f"Context retrieved: {context}")
+    
 #     result = get_llm_response(
 #         user_query="""Explain during NeRF training, this encourages the space around the
 #  object to be represented as empty, which will later allow
@@ -312,13 +316,13 @@ def preview_chunks(page_chunks: list[list[str]], full_chunks: list[str], page_li
 #  NeRF, this empty space supervision is important to allow the
 #  two NeRFs to be rendered together correctly.
 #  Give me a detailed explanation of this paragraph and the words used in it.""",
-#         context=context,
+#         context=context, 
 #         chat_history=[]
 #     )
+    
 #     print(f"\n\n\nLLM Response: {result}")
 
 # ---------------------------- RUN MODE ----------------------------
-
 
 if __name__ == "__main__":
     uvicorn.run(app, host="127.0.0.1", port=8000, reload=True)
