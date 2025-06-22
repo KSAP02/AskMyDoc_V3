@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: AskMyDoc
+    name: AskMyDoc_v3
     env: docker
     plan: free
     dockerfilePath: ./Dockerfile-frontend
@@ -11,10 +11,10 @@ services:
     #   - fromGroup: SmartIntern_env_var  # ✅ Reference your environment group
 
   - type: web
-    name: askmydoc_backend
+    name: askmydoc_backend_v3
     env: docker
     plan: free
     dockerfilePath: ./backend/Dockerfile_backend
     autoDeploy: true
     envVars:
-      - fromGroup: AskMyDoc_env_var  # ✅ Reference your environment group
+      - fromGroup: AskMyDoc_v3_env_var  # ✅ Reference your environment group
