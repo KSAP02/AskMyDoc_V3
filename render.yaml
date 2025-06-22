@@ -5,9 +5,9 @@ services:
     plan: free
     dockerfilePath: ./Dockerfile-frontend
     autoDeploy: true
-    envVars:
-      - key: NEXT_PUBLIC_BACKEND_URL
-        value: https://askmydoc-backend-v3.onrender.com
+    # envVars:
+    #   - key: NEXT_PUBLIC_BACKEND_URL
+    #     value: https://askmydoc-backend-v3.onrender.com
     #   - fromGroup: SmartIntern_env_var  # ✅ Reference your environment group
 
   - type: web

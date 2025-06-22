@@ -23,7 +23,7 @@ app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
     # allow_origins=["http://localhost:3000"], # Local URL
-    allow_origins=["https://askmydoc-v3.onrender.com"], # deployment URL
+    allow_origins=["*"], # deployment URL
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
