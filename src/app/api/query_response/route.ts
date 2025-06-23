@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 // const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8000'; // Local Docker URL
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://askmydoc-backend-v3.onrender.com'; // Render Deployment URL
+// const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://askmydoc-backend-v3.onrender.com'; // Render Deployment URL
+const BACKEND_URL = process.env.BACKEND_URL;
 
 interface QueryRequest {
   query: string;
